@@ -16,7 +16,7 @@ var (
 	notInitRedisManager = errors.New("not init redis manager")
 )
 
-func init() {
+func initRedis() {
 	redisManager = &RedisManager{}
 	open()
 }
@@ -53,11 +53,12 @@ func open() {
 		MaxActive:   10,
 		MaxIdle:     10,
 		IdleTimeout: time.Second * 60,
-		//Dial: func() (redis.Conn, error) {
-		//	return redis.DialURL("redis://host", redis.DialPassword("abc"))
-		//},
 		Dial: func() (redis.Conn, error) {
-			return redis.DialURL("redis://10.12.23.116:6379", redis.DialPassword(""))
+			if RedisPassword != "" {
+				return redis.DialURL(fmt.Sprintf("redis://%v:%v", RedisHost, RedisPort),
+					redis.DialPassword(RedisPassword))
+			}
+			return redis.DialURL(fmt.Sprintf("redis://%v:%v", RedisHost, RedisPort))
 		},
 	}
 	conn := redisManager.Pool.Get()
@@ -82,17 +83,51 @@ func GetConnection() redis.Conn {
 	return redisManager.Pool.Get()
 }
 
-func (r *RedisManager) Get(key string) (string, error) {
-	conn := r.Pool.Get()
-	defer conn.Close()
-	result, err := conn.Do("get", key)
-	return redis.String(result, err)
+func u82b(u8 []uint8) []byte {
+	b := make([]byte, len(u8))
+	for i, v := range u8 {
+		b[i] = byte(v)
+	}
+	return b
 }
 
-func (r *RedisManager) Set(key string, value string) error {
+func (r *RedisManager) Get(key string) ([]byte, error) {
+	conn := r.Pool.Get()
+	defer conn.Close()
+
+	result, err := conn.Do("get", key)
+	//return u82b(result.([]uint8)), err
+	return result.([]byte), err
+}
+
+func (r *RedisManager) Set(key string, value interface{}) error {
 	conn := r.Pool.Get()
 	defer conn.Close()
 	_, err := conn.Do("set", key, value)
+	return err
+}
+
+func (r *RedisManager) Hset() {
+	conn := r.Pool.Get()
+	defer conn.Close()
+
+	conn.Do("HSET", "k1")
+
+}
+
+func (r *RedisManager) Incr() {
+	conn := r.Pool.Get()
+	defer conn.Close()
+
+	conn.Do("INCR", "k1")
+
+}
+
+func (r *RedisManager) Del(key string) error {
+	conn := r.Pool.Get()
+	defer conn.Close()
+
+	_, err := conn.Do("DEL", key)
 	return err
 }
 

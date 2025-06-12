@@ -1,9 +1,3 @@
-/**
-
-
-    2/3
-**/
-
 package utils
 
 import (
