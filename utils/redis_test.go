@@ -14,7 +14,7 @@ func lineKeys() {
 }
 
 func testKeys() {
-	RedisHost = "10.12.23.52"
+	RedisHost = "192.168.1.1"
 	RedisPort = 6379
 }
 
